@@ -14,38 +14,47 @@ extension NSTouchBar.CustomizationIdentifier {
 }
 extension NSTouchBarItem.Identifier {
     static let pockSystemIcon = NSTouchBarItem.Identifier("Pock")
-    static let dockView       = NSTouchBarItem.Identifier("Dock")
-    static let escButton      = NSTouchBarItem.Identifier("Esc")
-    static let controlCenter  = NSTouchBarItem.Identifier("ControlCenter")
-    static let nowPlaying     = NSTouchBarItem.Identifier("NowPlaying")
-    static let status         = NSTouchBarItem.Identifier("Status")
+    static let dockView = NSTouchBarItem.Identifier("Dock")
+    static let escButton = NSTouchBarItem.Identifier("Esc")
+    static let controlCenter = NSTouchBarItem.Identifier("ControlCenter")
+    static let nowPlaying = NSTouchBarItem.Identifier("NowPlaying")
+    static let status = NSTouchBarItem.Identifier("Status")
+    static let animate = NSTouchBarItem.Identifier("Animation")
+    static let animate2 = NSTouchBarItem.Identifier("Animation")
+    static let animate3 = NSTouchBarItem.Identifier("Animation")
+
 }
 
 class PockMainController: PKTouchBarController {
-    
+
+    public var marioTime: Bool = false;
     /// Core
     private var loadedWidgets: [NSTouchBarItem.Identifier: PKWidget] = [:]
-    
+
     override var systemTrayItem: NSCustomTouchBarItem? {
         let item = NSCustomTouchBarItem(identifier: .pockSystemIcon)
         item.view = NSButton(image: #imageLiteral(resourceName: "pock-inner-icon"), target: self, action: #selector(present))
         return item
     }
     override var systemTrayItemIdentifier: NSTouchBarItem.Identifier? { return .pockSystemIcon }
-    
+
     required init() {
         super.init()
         self.showControlStripIcon()
     }
-    
+
+    public func setMarioTime() {
+        self.marioTime = true;
+    }
+
     deinit {
         self.loadedWidgets.removeAll()
         if !isProd { print("[PockMainController]: Deinit Pock main controller") }
     }
-    
+
     private func loadPluginsFromFilesystem(completion: ([PKWidget]) -> Void) {
         self.loadedWidgets.removeAll()
-        
+
         let path = FileManager.default.homeDirectoryForCurrentUser.path + "/Library/Application Support/Pock"
         let widgetsPath = path + "/Widgets"
         var directoryExists: ObjCBool = false
@@ -60,7 +69,7 @@ class PockMainController: PKTouchBarController {
             return
         }
         let enumerator = FileManager.default.enumerator(atPath: widgetsPath)
-        let widgetBundles = (enumerator?.allObjects as? [String] ?? []).filter{ $0.contains(".pock") && !$0.contains("/") }
+        let widgetBundles = (enumerator?.allObjects as? [String] ?? []).filter { $0.contains(".pock") && !$0.contains("/") }
         for widgetBundle in widgetBundles {
             /// load bundle
             let bundlePath = "\(widgetsPath)/\(widgetBundle)"
@@ -73,36 +82,47 @@ class PockMainController: PKTouchBarController {
         }
         completion(Array(loadedWidgets.values))
     }
-    
+
     override func awakeFromNib() {
         self.loadPluginsFromFilesystem(completion: { widgets in
-            self.touchBar?.customizationIdentifier              = .pockTouchBar
-            self.touchBar?.defaultItemIdentifiers               = [.escButton, .dockView]
-            self.touchBar?.customizationAllowedItemIdentifiers  = [.escButton, .dockView, .controlCenter, .nowPlaying, .status]
-            
+
+            if(marioTime) {
+                self.touchBar?.customizationIdentifier = .pockTouchBar
+                self.touchBar?.defaultItemIdentifiers = [.escButton, .dockView]
+                self.touchBar?.customizationAllowedItemIdentifiers = [.animate]
+
+            }
+            else {
+                self.touchBar?.customizationIdentifier = .pockTouchBar
+                self.touchBar?.defaultItemIdentifiers = [.escButton, .dockView]
+                self.touchBar?.customizationAllowedItemIdentifiers = [.escButton, .dockView, .controlCenter, .nowPlaying, .status, .animate, .animate2, .animate3]
+            }
+
             let customizableIds: [NSTouchBarItem.Identifier] = widgets.map({ $0.identifier })
             self.touchBar?.customizationAllowedItemIdentifiers.append(contentsOf: customizableIds)
-            
+
             super.awakeFromNib()
         })
     }
-    
+
     func touchBar(_ touchBar: NSTouchBar, makeItemForIdentifier identifier: NSTouchBarItem.Identifier) -> NSTouchBarItem? {
         var widget: PKWidget?
         switch identifier {
-        /// Esc button
+            /// Esc button
         case .escButton:
             widget = EscWidget()
-        /// Dock widget
+        case .animate, .animate2, .animate3:
+            widget = AnimationWidget()
+            /// Dock widget
         case .dockView:
             widget = DockWidget()
-        /// ControlCenter widget
+            /// ControlCenter widget
         case .controlCenter:
             widget = ControlCenterWidget()
-        /// NowPlaying widget
+            /// NowPlaying widget
         case .nowPlaying:
             widget = NowPlayingWidget()
-        /// Status widget
+            /// Status widget
         case .status:
             widget = StatusWidget()
         default:
@@ -111,5 +131,5 @@ class PockMainController: PKTouchBarController {
         guard widget != nil else { return nil }
         return PKWidgetTouchBarItem(widget: widget!)
     }
-    
+
 }

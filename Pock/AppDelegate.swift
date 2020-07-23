@@ -9,75 +9,68 @@
 import Cocoa
 import Defaults
 import Preferences
-import Fabric
-import Crashlytics
 import Magnet
 @_exported import PockKit
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
-    
+
     static var `default`: AppDelegate {
         return NSApp.delegate as! AppDelegate
     }
-    
+
     /// Core
     fileprivate var _navController: PKTouchBarNavController?
     var navController: PKTouchBarNavController? { return _navController }
-    
+
     /// Timer
     fileprivate var automaticUpdatesTimer: Timer?
-    
+
     /// Status bar Pock icon
     fileprivate let pockStatusbarIcon = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    
+
     /// Preferences
     fileprivate let generalPreferencePane: GeneralPreferencePane = GeneralPreferencePane()
     fileprivate let dockWidgetPreferencePane: DockWidgetPreferencePane = DockWidgetPreferencePane()
     fileprivate let statusWidgetPreferencePane: StatusWidgetPreferencePane = StatusWidgetPreferencePane()
     fileprivate let controlCenterWidgetPreferencePane: ControlCenterWidgetPreferencePane = ControlCenterWidgetPreferencePane()
     fileprivate var preferencesWindowController: PreferencesWindowController!
-    
+
     /// Finish launching
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
         NSApp.isAutomaticCustomizeTouchBarMenuItemEnabled = true
-        
-        /// Initialize Crashlytics
-        if isProd {
-            UserDefaults.standard.register(defaults: ["NSApplicationCrashOnExceptions": true])
-            Fabric.with([Crashlytics.self])
-        }
-        
+
+
         /// Check for accessibility (needed for badges to work)
         self.checkAccessibility()
-        
+
         /// Preferences
         self.preferencesWindowController = PreferencesWindowController(preferencePanes: [generalPreferencePane,
-                                                                                         dockWidgetPreferencePane,
-                                                                                         statusWidgetPreferencePane,
-                                                                                         controlCenterWidgetPreferencePane])
-        
+                                                                           dockWidgetPreferencePane,
+                                                                           statusWidgetPreferencePane,
+                                                                           controlCenterWidgetPreferencePane])
+
         /// Check for status bar icon
         if let button = pockStatusbarIcon.button {
             button.image = NSImage(named: "pock-inner-icon")
             button.image?.isTemplate = true
             /// Create menu
             let menu = NSMenu(title: "Pock Options")
-            menu.addItem(withTitle: "Preferences…", action: #selector(openPreferences),   keyEquivalent: ",")
-            menu.addItem(withTitle: "Customize…",   action: #selector(openCustomization), keyEquivalent: "c")
+            menu.addItem(withTitle: "Preferences…", action: #selector(openPreferences), keyEquivalent: ",")
+            menu.addItem(withTitle: "Customize…", action: #selector(openCustomization), keyEquivalent: "c")
             menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: "Support this project", action: #selector(openDonateURL),  keyEquivalent: "s")
+            menu.addItem(withTitle: "Support this project", action: #selector(openDonateURL), keyEquivalent: "s")
             menu.addItem(NSMenuItem.separator())
             menu.addItem(withTitle: "Quit Pock", action: #selector(NSApp.terminate), keyEquivalent: "q")
             pockStatusbarIcon.menu = menu
         }
-        
+
         /// Check for updates
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: { [weak self] in
             self?.checkForUpdates()
         })
-        
+
         /// Register for notification
         NSWorkspace.shared.notificationCenter.addObserver(self,
                                                           selector: #selector(toggleAutomaticUpdatesTimer),
@@ -87,24 +80,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                                                           selector: #selector(reloadPock),
                                                           name: .shouldReloadPock,
                                                           object: nil)
+
+        NSWorkspace.shared.notificationCenter.addObserver(self,
+                                                          selector: #selector(marioTime),
+                                                          name: NSNotification.Name(rawValue: "itsMarioTime"),
+                                                          object: nil)
+
         toggleAutomaticUpdatesTimer()
         registerGlobalHotKey()
-        
+
         /// Present Pock
         self.reloadPock()
-        
+
         /// Set Pock inactive
         NSApp.deactivate()
-        
+
     }
-    
+
+    @objc private func marioTime() {
+
+        print("mario time");
+        _navController?.dismiss()
+        _navController = nil
+        let mainController: PockMainController = PockMainController.loadMario()
+        _navController = PKTouchBarNavController(rootController: mainController)
+
+    }
+
     @objc func reloadPock() {
         _navController?.dismiss()
         _navController = nil
         let mainController: PockMainController = PockMainController.load()
         _navController = PKTouchBarNavController(rootController: mainController)
     }
-    
+
     private func registerGlobalHotKey() {
         if let keyCombo = KeyCombo(doubledCocoaModifiers: .control) {
             let hotKey = HotKey(identifier: "TogglePock", keyCombo: keyCombo) { [weak self] _ in
@@ -113,23 +122,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             hotKey.register()
         }
     }
-    
+
     @objc private func toggleAutomaticUpdatesTimer() {
         if defaults[.enableAutomaticUpdates] {
             automaticUpdatesTimer = Timer.scheduledTimer(timeInterval: 86400 /*24h*/, target: self, selector: #selector(checkForUpdates), userInfo: nil, repeats: true)
-        }else {
+        } else {
             automaticUpdatesTimer?.invalidate()
             automaticUpdatesTimer = nil
         }
     }
-    
+
     /// Will terminate
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
         _navController?.dismiss()
         _navController = nil
     }
-    
+
     /// Check for updates
     @objc private func checkForUpdates() {
         generalPreferencePane.hasLatestVersion(completion: { [weak self] versionNumber, downloadURL in
@@ -140,7 +149,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         })
     }
-    
+
     /// Check for accessibility
     @discardableResult
     private func checkAccessibility() -> Bool {
@@ -149,19 +158,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let accessEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary?)
         return accessEnabled
     }
-    
+
     /// Open preferences
     @objc private func openPreferences() {
         preferencesWindowController.show()
     }
-    
+
     @objc private func openCustomization() {
         (_navController?.rootController as? PockMainController)?.openCustomization()
     }
-    
+
     @objc private func openDonateURL() {
         guard let url = URL(string: "https://paypal.me/pigigaldi") else { return }
         NSWorkspace.shared.open(url)
     }
-    
+
 }

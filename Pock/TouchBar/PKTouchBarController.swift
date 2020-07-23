@@ -10,25 +10,37 @@ import Foundation
 import Defaults
 
 class PKTouchBarController: NSObject, NSTouchBarDelegate {
-    
+
     @IBOutlet var touchBar: NSTouchBar?
-    
+
     private(set) var isVisible: Bool = false
-    
+
     weak var navController: PKTouchBarNavController?
-    
-    var systemTrayItem:           NSCustomTouchBarItem?      { return nil }
+
+    var systemTrayItem: NSCustomTouchBarItem? { return nil }
     var systemTrayItemIdentifier: NSTouchBarItem.Identifier? { return nil }
-    
+
     override required init() { super.init() }
-    
+
     class func load<T: PKTouchBarController>(_ type: T.Type = T.self) -> T {
         let controller = T()
         controller.reloadNib(type)
         return controller
     }
-    
-    private func reloadNib<T: PKTouchBarController>(_ type: T.Type = T.self) {
+
+    public class func loadMario<T: PKTouchBarController>(_ type: T.Type = T.self) -> T {
+        let controller = T()
+
+        if let pockControl = controller as? PockMainController {
+            pockControl.marioTime = true;
+            pockControl.reloadNib(type)
+            return pockControl as! T
+        }
+        controller.reloadNib(type)
+        return controller
+    }
+
+    public func reloadNib<T: PKTouchBarController>(_ type: T.Type = T.self) {
         Bundle.main.loadNibNamed(NSNib.Name(String(describing: type)), owner: self, topLevelObjects: nil)
         if touchBar == nil {
             touchBar = NSTouchBar()
@@ -37,26 +49,26 @@ class PKTouchBarController: NSObject, NSTouchBarDelegate {
         self.didLoad()
         self.showControlStripIcon()
     }
-    
+
     func didLoad() {
         /// override in subclasses.
     }
-    
+
     func showControlStripIcon() {
         DFRSystemModalShowsCloseBoxWhenFrontMost(false)
         guard systemTrayItem != nil else { return }
         NSTouchBarItem.removeSystemTrayItem(systemTrayItem!)
         NSTouchBarItem.addSystemTrayItem(systemTrayItem!)
     }
-    
+
     @objc func toggle() {
         if self.isVisible {
             self.minimize()
-        }else {
+        } else {
             self.present()
         }
     }
-    
+
     @objc func dismiss() {
         if #available (macOS 10.14, *) {
             NSTouchBar.dismissSystemModalTouchBar(touchBar)
@@ -65,7 +77,7 @@ class PKTouchBarController: NSObject, NSTouchBarDelegate {
         }
         self.isVisible = false
     }
-    
+
     @objc func minimize() {
         if #available (macOS 10.14, *) {
             NSTouchBar.minimizeSystemModalTouchBar(touchBar)
@@ -74,14 +86,14 @@ class PKTouchBarController: NSObject, NSTouchBarDelegate {
         }
         self.isVisible = false
     }
-    
+
     @objc func present() {
         self.reloadNib()
         let placement: Int64 = defaults[.hideControlStrip] ? 1 : 0
         self.presentWithPlacement(placement: placement)
         self.isVisible = true
     }
-    
+
     private func presentWithPlacement(placement: Int64) {
         if #available (macOS 10.14, *) {
             NSTouchBar.presentSystemModalTouchBar(touchBar, placement: placement, systemTrayItemIdentifier: systemTrayItemIdentifier)
@@ -89,17 +101,17 @@ class PKTouchBarController: NSObject, NSTouchBarDelegate {
             NSTouchBar.presentSystemModalFunctionBar(touchBar, placement: placement, systemTrayItemIdentifier: systemTrayItemIdentifier)
         }
     }
-    
+
 }
 
 extension PKTouchBarController {
-    
+
     func openCustomization() {
         NSApp.touchBar = self.touchBar
         self.addCustomizationObservers()
         self.perform(#selector(delayedOpenCustomization), with: nil, afterDelay: 0.3)
     }
-    
+
     private func addCustomizationObservers() {
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(willEnterCustomization(_:)),
@@ -110,7 +122,7 @@ extension PKTouchBarController {
                                                name: NSNotification.Name("NSTouchBarDidExitCustomization"),
                                                object: nil)
     }
-    
+
     private func removeCustomizationObservers() {
         NotificationCenter.default.removeObserver(self,
                                                   name: NSNotification.Name("NSTouchBarWillEnterCustomization"),
@@ -119,19 +131,19 @@ extension PKTouchBarController {
                                                   name: NSNotification.Name("NSTouchBarDidExitCustomization"),
                                                   object: nil)
     }
-    
+
     @objc private func delayedOpenCustomization() {
         NSApp.toggleTouchBarCustomizationPalette(nil)
     }
-    
+
     @objc private func willEnterCustomization(_ sender: Any?) {
         self.dismiss()
     }
-    
+
     @objc private func didExitCustomization(_ sender: Any?) {
         NSApp.touchBar = nil
         self.removeCustomizationObservers()
         self.present()
     }
-    
+
 }
