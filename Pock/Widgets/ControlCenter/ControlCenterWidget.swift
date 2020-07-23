@@ -55,30 +55,40 @@ class PressableSegmentedControl: NSSegmentedControl {
 class ControlCenterWidget: PKWidget {
     
     var identifier: NSTouchBarItem.Identifier = NSTouchBarItem.Identifier.controlCenter
-    var customizationLabel: String            = "Control Center"
+    var customizationLabel: String            = "Control Center".localized
     var view: NSView!
     
     /// Core
-    private var controls: [ControlCenterItem] {
+    // Use controlsRaw to find volume and brightness items. Using control will show same icon for both vol(and brightness) up and down in slideableController when only 1 of up/down is enabled
+    private var controlsRaw: [ControlCenterItem] {
         return [
             CCSleepItem(parentWidget: self),
             CCLockItem(parentWidget: self),
+            CCScreensaverItem(parentWidget: self),
+            CCDoNotDisturbItem(parentWidget: self),
             CCBrightnessDownItem(parentWidget: self),
             CCBrightnessUpItem(parentWidget: self),
+            CCBrightnessToggleItem(parentWidget: self),
             CCVolumeDownItem(parentWidget: self),
-            CCVolumeUpItem(parentWidget: self)
-        ].filter({ $0.enabled })
+            CCVolumeUpItem(parentWidget: self),
+            CCVolumeToggleItem(parentWidget: self),
+            CCVolumeMuteItem(parentWidget: self)
+        ]
+    }
+    
+    private var controls: [ControlCenterItem] {
+        return controlsRaw.filter({ $0.enabled })
     }
     private var slideableController: PKSlideableController?
     
     /// Volume items
     public var volumeItems: [ControlCenterItem] {
-        return controls.filter({ $0 is CCVolumeUpItem || $0 is CCVolumeDownItem })
+        return controlsRaw.filter({ $0 is CCVolumeUpItem || $0 is CCVolumeDownItem || $0 is CCVolumeMuteItem || $0 is CCVolumeToggleItem })
     }
     
     /// Brightness items
     public var brightnessItems: [ControlCenterItem] {
-        return controls.filter({ $0 is CCBrightnessUpItem || $0 is CCBrightnessDownItem })
+        return controlsRaw.filter({ $0 is CCBrightnessUpItem || $0 is CCBrightnessDownItem })
     }
     
     /// UI
@@ -125,8 +135,9 @@ class ControlCenterWidget: PKWidget {
         controls[sender.selectedSegment].action()
     }
     
+    // Hard Coded integer causes issue on long tap area when number of items change 
     @objc private func longTap(at location: CGPoint) {
-        let index = Int(ceil(location.x / (segmentedControl.frame.width / 4))) - 1
+        let index = Int(ceil(location.x / (segmentedControl.frame.width / CGFloat(controls.count)))) - 1
         guard (0..<controls.count).contains(index) else { return }
         segmentedControl.selectedSegment = index
         controls[index].longPressAction()
@@ -138,10 +149,10 @@ extension ControlCenterWidget {
         guard let item = item else { return }
         slideableController = PKSlideableController.load()
         switch item.self {
-        case is CCVolumeUpItem, is CCVolumeDownItem:
-            slideableController?.set(downItem: volumeItems.first, upItem: volumeItems.last)
-        case is CCBrightnessUpItem, is CCBrightnessDownItem:
-            slideableController?.set(downItem: brightnessItems.first, upItem: brightnessItems.last)
+        case is CCVolumeUpItem, is CCVolumeDownItem, is CCVolumeMuteItem, is CCVolumeToggleItem:
+            slideableController?.set(downItem: CCVolumeDownItem(parentWidget: self), upItem: CCVolumeUpItem(parentWidget: self))
+        case is CCBrightnessUpItem, is CCBrightnessDownItem, is CCBrightnessToggleItem:
+            slideableController?.set(downItem: CCBrightnessDownItem(parentWidget: self), upItem: CCBrightnessUpItem(parentWidget: self))
         default:
             return
         }

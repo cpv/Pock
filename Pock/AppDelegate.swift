@@ -34,6 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     fileprivate let dockWidgetPreferencePane: DockWidgetPreferencePane = DockWidgetPreferencePane()
     fileprivate let statusWidgetPreferencePane: StatusWidgetPreferencePane = StatusWidgetPreferencePane()
     fileprivate let controlCenterWidgetPreferencePane: ControlCenterWidgetPreferencePane = ControlCenterWidgetPreferencePane()
+    fileprivate let nowPlayingWidgetPreferencePane: NowPlayingPreferencePane = NowPlayingPreferencePane()
     fileprivate var preferencesWindowController: PreferencesWindowController!
 
     /// Finish launching
@@ -46,23 +47,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.checkAccessibility()
 
         /// Preferences
-        self.preferencesWindowController = PreferencesWindowController(preferencePanes: [generalPreferencePane,
-                                                                           dockWidgetPreferencePane,
-                                                                           statusWidgetPreferencePane,
-                                                                           controlCenterWidgetPreferencePane])
-
+        self.preferencesWindowController = PreferencesWindowController(preferencePanes: [
+            generalPreferencePane,
+            dockWidgetPreferencePane,
+            statusWidgetPreferencePane,
+            controlCenterWidgetPreferencePane,
+            nowPlayingWidgetPreferencePane
+        ])
+        
         /// Check for status bar icon
         if let button = pockStatusbarIcon.button {
             button.image = NSImage(named: "pock-inner-icon")
             button.image?.isTemplate = true
             /// Create menu
             let menu = NSMenu(title: "Pock Options")
-            menu.addItem(withTitle: "Preferences…", action: #selector(openPreferences), keyEquivalent: ",")
-            menu.addItem(withTitle: "Customize…", action: #selector(openCustomization), keyEquivalent: "c")
+            menu.addItem(withTitle: "Preferences…".localized, action: #selector(openPreferences),   keyEquivalent: ",")
+            menu.addItem(withTitle: "Customize…".localized,   action: #selector(openCustomization), keyEquivalent: "c")
             menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: "Support this project", action: #selector(openDonateURL), keyEquivalent: "s")
+            menu.addItem(withTitle: "Support this project".localized, action: #selector(openDonateURL),  keyEquivalent: "s")
             menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: "Quit Pock", action: #selector(NSApp.terminate), keyEquivalent: "q")
+            menu.addItem(withTitle: "Quit Pock".localized, action: #selector(NSApp.terminate), keyEquivalent: "q")
             pockStatusbarIcon.menu = menu
         }
 
@@ -94,7 +98,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         /// Set Pock inactive
         NSApp.deactivate()
+        
+        ///Reload Control Center Widget every 1 second in order to sync volume item icon with system
+        Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(reloadControlCenterWidget), userInfo: nil, repeats: true)
 
+    }
+    
+    @objc func reloadControlCenterWidget() {
+        NSWorkspace.shared.notificationCenter.post(name: .shouldReloadControlCenterWidget, object: nil)
     }
 
     @objc private func marioTime() {
@@ -124,7 +135,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleAutomaticUpdatesTimer() {
-        if defaults[.enableAutomaticUpdates] {
+        if Defaults[.enableAutomaticUpdates] {
             automaticUpdatesTimer = Timer.scheduledTimer(timeInterval: 86400 /*24h*/, target: self, selector: #selector(checkForUpdates), userInfo: nil, repeats: true)
         } else {
             automaticUpdatesTimer?.invalidate()

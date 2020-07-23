@@ -10,7 +10,7 @@ import Cocoa
 import Preferences
 import Defaults
 
-class StatusWidgetPreferencePane: NSViewController, PreferencePane {
+class StatusWidgetPreferencePane: NSViewController, NSTextFieldDelegate, PreferencePane {
 
     /// UI
     @IBOutlet weak var showWifiItem:                NSButton!
@@ -19,10 +19,11 @@ class StatusWidgetPreferencePane: NSViewController, PreferencePane {
     @IBOutlet weak var showBatteryPercentageItem:   NSButton!
     @IBOutlet weak var showDateItem:                NSButton!
     // @IBOutlet weak var showSpotlightItem:           NSButton!
+    @IBOutlet weak var timeFormatTextField:         NSTextField!
     
     /// Preferenceable
     var preferencePaneIdentifier: Identifier = Identifier.status_widget
-    let preferencePaneTitle:      String     = "Status Widget"
+    let preferencePaneTitle:      String     = "Status Widget".localized
     var toolbarItemIcon:          NSImage {
         let path = NSWorkspace.shared.absolutePathForApplication(withBundleIdentifier: "com.apple.systempreferences")!
         return NSWorkspace.shared.icon(forFile: path)
@@ -37,14 +38,16 @@ class StatusWidgetPreferencePane: NSViewController, PreferencePane {
         self.view.superview?.wantsLayer = true
         self.view.wantsLayer = true
         self.loadCheckboxState()
+        self.timeFormatTextField.delegate = self
+        self.timeFormatTextField.stringValue = Defaults[.timeFormatTextField]
     }
     
     private func loadCheckboxState() {
-        self.showWifiItem.state              = defaults[.shouldShowWifiItem]          ? .on : .off
-        self.showPowerItem.state             = defaults[.shouldShowPowerItem]         ? .on : .off
-        self.showBatteryIconItem.state       = defaults[.shouldShowBatteryIcon]       ? .on : .off
-        self.showBatteryPercentageItem.state = defaults[.shouldShowBatteryPercentage] ? .on : .off
-        self.showDateItem.state              = defaults[.shouldShowDateItem]          ? .on : .off
+        self.showWifiItem.state              = Defaults[.shouldShowWifiItem]          ? .on : .off
+        self.showPowerItem.state             = Defaults[.shouldShowPowerItem]         ? .on : .off
+        self.showBatteryIconItem.state       = Defaults[.shouldShowBatteryIcon]       ? .on : .off
+        self.showBatteryPercentageItem.state = Defaults[.shouldShowBatteryPercentage] ? .on : .off
+        self.showDateItem.state              = Defaults[.shouldShowDateItem]          ? .on : .off
         // self.showSpotlightItem.state         = defaults[.shouldShowSpotlightItem]     ? .on : .off
     }
     
@@ -66,8 +69,16 @@ class StatusWidgetPreferencePane: NSViewController, PreferencePane {
         default:
             return
         }
-        defaults[key] = checkbox.state == .on
+        Defaults[key] = checkbox.state == .on
         NSWorkspace.shared.notificationCenter.post(name: .shouldReloadStatusWidget, object: nil)
     }
     
+    @IBAction func openTimeFormatHelpURL(_ sender: NSButton) {
+        guard let url = URL(string: "https://www.mowglii.com/itsycal/datetime.html") else { return }
+        NSWorkspace.shared.open(url)
+    }
+    
+    func controlTextDidChange(_ obj: Notification) {
+        Defaults[.timeFormatTextField] = timeFormatTextField.stringValue
+    }
 }

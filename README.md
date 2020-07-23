@@ -1,14 +1,24 @@
 <p align="center"><img src="https://pock.dev/assets/img/brand/web-icon-black.png" width="96"/></p>
-<p align="center">Display macOS Dock in Touch Bar. It's free and open source!</p>
-
-<p align="center">A new Pock update is finally here!
-It comes with a lot of performance improvements, and it brings minimalistic widgets to your Touch Bar!
+<p align="center">Display macOS Dock in Touch Bar.</p>
+<p align="center">It's free and open source, and it also brings some minimalistic widgets with it!
 </p>
 <p align="center">
   <img width="800" src="https://pock.dev/assets/img/preview/pock_widgets.png"/>
 </p>
 
 
+
+## macOS Catalina (10.15)
+If you are on macOS Catalina (10.15), please click [here](https://pock.dev/docs/catalina.html) and read carefully the suggestions to have a flawless experience.
+
+## Why can't I open an issue/pull request?
+I’m currently migrating all default widgets to make **Pock** independent from them. 
+At the end of the process, each widget will have its _dedicated repo_, where you'll be able to open new PRs. 
+I hope to publish the new sources soon alongside **PockKit**.
+
+The PRs that are currently opened will be merged manually in the dedicated widget repository
+
+**Thanks for your patience!**
 
 ## Thank you!
 
@@ -34,10 +44,14 @@ Pock will always be available as free software!
 Your macOS Dock inside your MacBook's TouchBar, the core widget.
 It comes with fully-functional badge support so you will not miss any notification.
 More features can be configured in widget settings along with other preferences.
+It now includes multi-window support!
 *Enjoy your screen in full-size every time!*
 
 <div align="left">
   <img width="500" src="https://pock.dev/assets/img/preview/widgets/pock_dock_widget.png"/>
+</div>
+<div align="left" style="margin-top:6px">
+  <img width="500" src="https://pock.dev/assets/img/preview/widgets/pock_app_expose.png"/>
 </div>
 
 
@@ -70,7 +84,7 @@ A handy ESC button is there, just in case, so you don't have to hide Pock to acc
 
 ##### Status widget
 
-Always keep an eye on system information, like what time is it, or maybe WiFi status or Battery status. Configure Status items visibility from settings.
+Always keep an eye on system information, like what time is it, or maybe WiFi status or Battery status. Configure Status items from settings.
 
 <div align="left">
   <img width="500" src="https://pock.dev/assets/img/preview/widgets/pock_status_widget.png"/>
@@ -136,11 +150,22 @@ You can customize the widget position in TouchBar from the **Customize** menu it
 
 * [BrokenSt0rm](https://twitter.com/BrokenSt0rm) 🙅‍♂️
 * [SnapKit](https://github.com/SnapKit/SnapKit)
-* [Magnet](https://github.com/Clipy/Magnet)
+* [Magnet, LoginServiceKit](https://github.com/Clipy)
 * [touch-baer](https://github.com/a2/touch-baer) - How to put icon in Control Strip
 * [Minebomber](https://stackoverflow.com/a/36115210) - This comment blowed my mind
-* [Defaults, Preferences, LaunchAtLogin](https://github.com/sindresorhus/)
+* [Defaults, Preferences](https://github.com/sindresorhus/)
 * [Witness](https://github.com/njdehoog/Witness)
+
+
+
+## Translated READMEs
+
+🇺🇸 [English](README.md)
+🇨🇳 [中文](.github/readmes/README.cn.md)
+🇯🇵 [日本語](.github/readmes/README.ja.md)
+🇹🇷 [Türkçe](.github/readmes/README.tr.md)
+
+<small>* Some translations may be different or incomplete</small>.
 
 
 
@@ -153,4 +178,3 @@ You can customize the widget position in TouchBar from the **Customize** menu it
 ## License
 
 Under MIT license. See [LICENSE](LICENSE) file for further information.
-

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import PockKit
 
 /// Custom identifiers
 extension NSTouchBar.CustomizationIdentifier {
@@ -33,7 +34,7 @@ class PockMainController: PKTouchBarController {
 
     override var systemTrayItem: NSCustomTouchBarItem? {
         let item = NSCustomTouchBarItem(identifier: .pockSystemIcon)
-        item.view = NSButton(image: #imageLiteral(resourceName: "pock-inner-icon"), target: self, action: #selector(present))
+        item.view = NSButton(image: #imageLiteral(resourceName: "pock-inner-icon"), target: self, action: #selector(presentFromSystemTrayItem))
         return item
     }
     override var systemTrayItemIdentifier: NSTouchBarItem.Identifier? { return .pockSystemIcon }
@@ -48,7 +49,7 @@ class PockMainController: PKTouchBarController {
     }
 
     deinit {
-        self.loadedWidgets.removeAll()
+        WidgetsDispatcher.default.clearLoadedWidgets()
         if !isProd { print("[PockMainController]: Deinit Pock main controller") }
     }
 
@@ -97,12 +98,18 @@ class PockMainController: PKTouchBarController {
                 self.touchBar?.defaultItemIdentifiers = [.escButton, .dockView]
                 self.touchBar?.customizationAllowedItemIdentifiers = [.escButton, .dockView, .controlCenter, .nowPlaying, .status, .animate, .animate2, .animate3]
             }
+    
+    override func didLoad() {
+        WidgetsDispatcher.default.loadInstalledWidget() { widgets in
+            self.touchBar?.customizationIdentifier              = .pockTouchBar
+            self.touchBar?.defaultItemIdentifiers               = [.escButton, .dockView]
+            self.touchBar?.customizationAllowedItemIdentifiers  = [.escButton, .dockView, .controlCenter, .nowPlaying, .status]
 
             let customizableIds: [NSTouchBarItem.Identifier] = widgets.map({ $0.identifier })
             self.touchBar?.customizationAllowedItemIdentifiers.append(contentsOf: customizableIds)
 
             super.awakeFromNib()
-        })
+        }
     }
 
     func touchBar(_ touchBar: NSTouchBar, makeItemForIdentifier identifier: NSTouchBarItem.Identifier) -> NSTouchBarItem? {
@@ -126,7 +133,7 @@ class PockMainController: PKTouchBarController {
         case .status:
             widget = StatusWidget()
         default:
-            widget = loadedWidgets[identifier]
+            widget = WidgetsDispatcher.default.loadedWidgets[identifier]
         }
         guard widget != nil else { return nil }
         return PKWidgetTouchBarItem(widget: widget!)

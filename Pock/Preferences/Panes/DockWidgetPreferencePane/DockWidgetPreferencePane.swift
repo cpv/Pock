@@ -13,6 +13,7 @@ import Defaults
 class DockWidgetPreferencePane: NSViewController, PreferencePane {
     
     @IBOutlet weak var notificationBadgeRefreshRatePicker: NSPopUpButton!
+    @IBOutlet weak var appExposeSettingsPicker:            NSPopUpButton!
     @IBOutlet weak var hideFinderCheckbox:                 NSButton!
     @IBOutlet weak var showOnlyRunningApps:                NSButton!
     @IBOutlet weak var hideTrashCheckbox:                  NSButton!
@@ -22,12 +23,13 @@ class DockWidgetPreferencePane: NSViewController, PreferencePane {
     
     /// Preferenceable
     var preferencePaneIdentifier: Identifier = Identifier.dock_widget
-    let preferencePaneTitle:      String     = "Dock Widget"
+
+    let preferencePaneTitle:      String     = "Dock Widget".localized
     var toolbarItemIcon: NSImage {
         let path = NSWorkspace.shared.absolutePathForApplication(withBundleIdentifier: "com.apple.dock")!
         return NSWorkspace.shared.icon(forFile: path)
     }
-    
+
     override var nibName: NSNib.Name? {
         return "DockWidgetPreferencePane"
     }
@@ -40,7 +42,7 @@ class DockWidgetPreferencePane: NSViewController, PreferencePane {
     
     override func viewWillAppear() {
         super.viewWillAppear()
-        self.populatePopUpButton()
+        self.populatePopUpButtons()
         self.setupCheckboxes()
         self.setupItemSpacingTextField()
     }
@@ -50,57 +52,64 @@ class DockWidgetPreferencePane: NSViewController, PreferencePane {
         self.itemSpacingTextField.placeholderString = "8pt"
     }
     
-    private func populatePopUpButton() {
+    private func populatePopUpButtons() {
         self.notificationBadgeRefreshRatePicker.removeAllItems()
         self.notificationBadgeRefreshRatePicker.addItems(withTitles: NotificationBadgeRefreshRateKeys.allCases.map({ $0.toString() }))
-        self.notificationBadgeRefreshRatePicker.selectItem(withTitle: defaults[.notificationBadgeRefreshInterval].toString())
+        self.notificationBadgeRefreshRatePicker.selectItem(withTitle: Defaults[.notificationBadgeRefreshInterval].toString())
+
+        self.appExposeSettingsPicker.removeAllItems()
+        self.appExposeSettingsPicker.addItems(withTitles: AppExposeSettings.allCases.map { $0.title })
+        self.appExposeSettingsPicker.selectItem(withTitle: Defaults[.appExposeSettings].title)
     }
     
     private func setupCheckboxes() {
-        self.hideFinderCheckbox.state           = defaults[.hideFinder]           ? .on : .off
-        self.showOnlyRunningApps.state          = defaults[.showOnlyRunningApps]  ? .on : .off
-        self.hideTrashCheckbox.state            = defaults[.hideTrash]            ? .on : .off
-        self.hidePersistentItemsCheckbox.state  = defaults[.hidePersistentItems]  ? .on : .off
-        self.openFinderInsidePockCheckbox.state = defaults[.openFinderInsidePock] ? .on : .off
-        self.hideTrashCheckbox.isEnabled        = !defaults[.hidePersistentItems]
+        self.hideFinderCheckbox.state           = Defaults[.hideFinder]           ? .on : .off
+        self.showOnlyRunningApps.state          = Defaults[.showOnlyRunningApps]  ? .on : .off
+        self.hideTrashCheckbox.state            = Defaults[.hideTrash]            ? .on : .off
+        self.hidePersistentItemsCheckbox.state  = Defaults[.hidePersistentItems]  ? .on : .off
+        self.openFinderInsidePockCheckbox.state = Defaults[.openFinderInsidePock] ? .on : .off
+        self.hideTrashCheckbox.isEnabled        = !Defaults[.hidePersistentItems]
     }
-    
+
     @IBAction private func didSelectNotificationBadgeRefreshRate(_: NSButton) {
-        defaults[.notificationBadgeRefreshInterval] = NotificationBadgeRefreshRateKeys.allCases[self.notificationBadgeRefreshRatePicker.indexOfSelectedItem]
+        Defaults[.notificationBadgeRefreshInterval] = NotificationBadgeRefreshRateKeys.allCases[self.notificationBadgeRefreshRatePicker.indexOfSelectedItem]
         NSWorkspace.shared.notificationCenter.post(name: .didChangeNotificationBadgeRefreshRate, object: nil)
+    }
+
+    @IBAction func didSelectAppExposeSettings(_: NSButton) {
+        Defaults[.appExposeSettings] = AppExposeSettings.allCases[self.appExposeSettingsPicker.indexOfSelectedItem]
     }
     
     @IBAction private func didChangeHideFinderValue(button: NSButton) {
-        defaults[.hideFinder] = button.state == .on
+        Defaults[.hideFinder] = button.state == .on
         NSWorkspace.shared.notificationCenter.post(name: .shouldReloadDock, object: nil)
     }
     
     @IBAction private func didChangeShowOnlyRunningAppsValue(button: NSButton) {
-        defaults[.showOnlyRunningApps] = button.state == .on
+        Defaults[.showOnlyRunningApps] = button.state == .on
         NSWorkspace.shared.notificationCenter.post(name: .shouldReloadDock, object: nil)
     }
     
     @IBAction private func didChangeHideTrashValue(button: NSButton) {
-        defaults[.hideTrash] = button.state == .on
+        Defaults[.hideTrash] = button.state == .on
         NSWorkspace.shared.notificationCenter.post(name: .shouldReloadPersistentItems, object: nil)
     }
     
     @IBAction private func didChangeHidePersistentValue(button: NSButton) {
-        defaults[.hidePersistentItems] = button.state == .on
-        hideTrashCheckbox.isEnabled = !defaults[.hidePersistentItems]
+        Defaults[.hidePersistentItems] = button.state == .on
+        hideTrashCheckbox.isEnabled = !Defaults[.hidePersistentItems]
         NSWorkspace.shared.notificationCenter.post(name: .shouldReloadPersistentItems, object: nil)
     }
     
     @IBAction private func didChangeOpenFinderInsidePockValue(button: NSButton) {
-        defaults[.openFinderInsidePock] = button.state == .on
+        Defaults[.openFinderInsidePock] = button.state == .on
     }
-    
 }
 
 extension DockWidgetPreferencePane: NSTextFieldDelegate {
     func controlTextDidEndEditing(_ obj: Notification) {
         let value = itemSpacingTextField.stringValue.replacingOccurrences(of: "pt", with: "")
-        defaults[.itemSpacing] = Int(value) ?? 8
+        Defaults[.itemSpacing] = Int(value) ?? 8
         NSWorkspace.shared.notificationCenter.post(name: .shouldReloadDockLayout, object: nil)
     }
 }

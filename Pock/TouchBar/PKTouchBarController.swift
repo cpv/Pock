@@ -89,7 +89,11 @@ class PKTouchBarController: NSObject, NSTouchBarDelegate {
 
     @objc func present() {
         self.reloadNib()
-        let placement: Int64 = defaults[.hideControlStrip] ? 1 : 0
+        self.presentFromSystemTrayItem()
+    }
+    
+    @objc func presentFromSystemTrayItem() {
+        let placement: Int64 = Defaults[.hideControlStrip] ? 1 : 0
         self.presentWithPlacement(placement: placement)
         self.isVisible = true
     }
